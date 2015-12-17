@@ -40,7 +40,7 @@ import re
 import subprocess
 import logging
 import inspect
-import urllib
+import urllib.request, urllib.parse, urllib.error
 import datetime
 
 logger = logging.getLogger('updater4pyi')
@@ -120,10 +120,10 @@ def ensure_timedelta(x):
     if isinstance(x, datetime.timedelta):
         return x
     
-    if isinstance(x, basestring):
+    if isinstance(x, str):
         val = datetime.timedelta(0)
         for m in re.finditer(_TIMEDELTA_RX, x):
-            thisvallst = [ v for k,v in _timedelta_units.iteritems()
+            thisvallst = [ v for k,v in _timedelta_units.items()
                            if k.lower().startswith(m.group('unit')) ]
             if not thisvallst: raise ValueError("Unexpected unit: %s" %(m.group('unit')))
             val += int(m.group('num')) * thisvallst[0]
@@ -143,7 +143,7 @@ def ensure_datetime(x):
     if isinstance(x, datetime.datetime):
         return x
 
-    if isinstance(x, basestring):
+    if isinstance(x, str):
         try:
             import dateutil.parser
             return dateutil.parser.parse(x)
@@ -234,7 +234,7 @@ def path2url(p):
         # on windows: a\b -> a/b
         x = x.replace(os.sep, '/');
         
-    x = urllib.pathname2url(x)
+    x = urllib.request.pathname2url(x)
     if not x.startswith('///'):
         x = "//"+os.path.abspath(x)
     return 'file:'+x
@@ -367,7 +367,7 @@ def run_win(argv, needs_sudo=False, wait=True, cwd=None):
     """
 
     if os.name != 'nt':
-        raise RuntimeError, "This function is only implemented on Windows."
+        raise RuntimeError("This function is only implemented on Windows.")
 
     import win32api, win32con, win32event, win32process
     from win32com.shell.shell import ShellExecuteEx
@@ -606,7 +606,7 @@ def which(name, flags=os.X_OK, usecache=True, firstresult=True):
                 return _which_cache.get(name)
 
     result = []
-    exts = filter(None, os.environ.get('PATHEXT', '').split(os.pathsep))
+    exts = [_f for _f in os.environ.get('PATHEXT', '').split(os.pathsep) if _f]
     path = os.environ.get('PATH', None)
     if path is None:
         return []

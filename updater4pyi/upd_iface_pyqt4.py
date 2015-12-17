@@ -78,7 +78,7 @@ class UpdatePyQt4Interface(QObject, upd_iface.UpdateGenericGuiInterface):
         logger.debug("save_settings: saving settings: %r", d)
 
         settings = self.get_settings_object()
-        for k,v in d.iteritems():
+        for k,v in d.items():
             settings.setValue(k, QVariant(v))
 
         # and save the settings to disk.
@@ -88,8 +88,8 @@ class UpdatePyQt4Interface(QObject, upd_iface.UpdateGenericGuiInterface):
     def ask_first_time(self):
         msgBox = QMessageBox(parent=None)
         msgBox.setWindowModality(Qt.NonModal)
-        msgBox.setText(unicode(self.tr("Would you like to regularly check for software updates%s?"))
-                       %( ((unicode(self.tr(" for %s"))%self.progname)
+        msgBox.setText(str(self.tr("Would you like to regularly check for software updates%s?"))
+                       %( ((str(self.tr(" for %s"))%self.progname)
                            if self.progname
                            else '') )
         )
@@ -115,7 +115,7 @@ class UpdatePyQt4Interface(QObject, upd_iface.UpdateGenericGuiInterface):
     def ask_to_update(self, rel_info):
         msgBox = QMessageBox(parent=None)
         msgBox.setWindowModality(Qt.NonModal)
-        msgBox.setText(unicode(self.tr("A new software update is available (%sversion %s). "
+        msgBox.setText(str(self.tr("A new software update is available (%sversion %s). "
                                        "Do you want to install it?"))
                        %(self.progname+' ' if self.progname else '', rel_info.get_version()))
         msgBox.setInformativeText(self.tr("Please make sure you save all your changes to your files "

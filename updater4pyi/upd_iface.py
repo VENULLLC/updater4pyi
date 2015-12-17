@@ -82,12 +82,12 @@ class UpdateConsoleInterface(UpdateInterface):
             self._runupdatecheck();
             
         except Updater4PyiError as e:
-            print "\n"
-            print "------------------------------------------------------------"
-            print "Error: %s" % (e)
-            print "Software update aborted."
-            print "------------------------------------------------------------"
-            print "\n"
+            print("\n")
+            print("------------------------------------------------------------")
+            print("Error: %s" % (e))
+            print("Software update aborted.")
+            print("------------------------------------------------------------")
+            print("\n")
             return
 
         # return to the main program.
@@ -109,18 +109,18 @@ class UpdateConsoleInterface(UpdateInterface):
 
         if (upd_info is None):
             # no updates.
-            print "No updates available."
+            print("No updates available.")
             return
 
         #
         # There's an update, prompt the user.
         #
-        print ""
-        print "-----------------------------------------------------------"
-        print ""
-        print ("A new software update is available (%sversion %s)"
-               % (self.progname+" " if self.progname else "", upd_info.version))
-        print ""
+        print("")
+        print("-----------------------------------------------------------")
+        print("")
+        print(("A new software update is available (%sversion %s)"
+               % (self.progname+" " if self.progname else "", upd_info.version)))
+        print("")
 
         if (self._ynprompt("Do you want to install it? (y/n) ")):
             #
@@ -130,22 +130,22 @@ class UpdateConsoleInterface(UpdateInterface):
             #
             # update installed.
             #
-            print ""
-            print "Update installed. Quitting. Please restart the program."
-            print ""
-            print "-----------------------------------------------------------"
-            print ""
+            print("")
+            print("Update installed. Quitting. Please restart the program.")
+            print("")
+            print("-----------------------------------------------------------")
+            print("")
             sys.exit(0)
         else:
-            print ""
-            print "Not installing update."
-            print ""
-            print "-----------------------------------------------------------"
-            print ""
+            print("")
+            print("Not installing update.")
+            print("")
+            print("-----------------------------------------------------------")
+            print("")
         
         
     def _ynprompt(self, msg):
-        yn = raw_input(msg)
+        yn = input(msg)
         return re.match(r'\s*y(es)?\s*', yn, re.IGNORECASE) is not None
 
 
@@ -374,7 +374,7 @@ class UpdateGenericGuiInterface(UpdateInterface):
         
         except Updater4PyiError as e:
             logger.warning("Error while checking for updates: %s", e)
-            return (False, None, unicode(e))
+            return (False, None, str(e))
             
         finally:
             self.last_check = datetime.datetime.now()

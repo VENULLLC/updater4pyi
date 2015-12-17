@@ -39,11 +39,11 @@ and and `this solution <http://stackoverflow.com/a/14320202/1694896>`_ on Stack 
 
 import logging
 
-import httplib
+import http.client
 import ssl
 import socket
 import shutil
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from . import upd_version
 from . import util
@@ -54,7 +54,7 @@ from .upd_log import logger
 
 CERT_FILE = util.resource_path('updater4pyi/cacert.pem');
 
-class ValidHTTPSConnection(httplib.HTTPConnection):
+class ValidHTTPSConnection(http.client.HTTPConnection):
     """
     HTTPS connection based on httplib.HTTPConnection, with complete certificate validation
     based on known root certificates packaged with the program.
@@ -64,10 +64,10 @@ class ValidHTTPSConnection(httplib.HTTPConnection):
     the pyinstaller bundle.
     """
 
-    default_port = httplib.HTTPS_PORT
+    default_port = http.client.HTTPS_PORT
 
     def __init__(self, *args, **kwargs):
-        httplib.HTTPConnection.__init__(self, *args, **kwargs)
+        http.client.HTTPConnection.__init__(self, *args, **kwargs)
 
     def connect(self):
         """
@@ -86,7 +86,7 @@ class ValidHTTPSConnection(httplib.HTTPConnection):
                                     cert_reqs=ssl.CERT_REQUIRED)
 
 
-class ValidHTTPSHandler(urllib2.HTTPSHandler):
+class ValidHTTPSHandler(urllib.request.HTTPSHandler):
     """
     A HTTPS urllib2 handler using :py:class:`ValidHttpsConnection`, i.e. with correct
     server certificate validation.
@@ -97,7 +97,7 @@ class ValidHTTPSHandler(urllib2.HTTPSHandler):
 
 
 
-url_opener = urllib2.build_opener(ValidHTTPSHandler)
+url_opener = urllib.request.build_opener(ValidHTTPSHandler)
 """
 The URL opener obtained with `urllib2.build_opener`, with valid HTTPS server certificate
 validation.

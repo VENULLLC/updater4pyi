@@ -50,7 +50,7 @@ from . import upd_version
 from .upd_log import logger
 from .upd_defs import RELTYPE_UNKNOWN, RELTYPE_EXE, RELTYPE_ARCHIVE, RELTYPE_BUNDLE_ARCHIVE
 from .upd_defs import Updater4PyiError
-import upd_downloader
+from . import upd_downloader
 
 
 # --------------------------------
@@ -430,12 +430,12 @@ class Updater(object):
                         if zinfo.filename in Updater.SPECIAL_ZIP_FILES:
                             continue
                         thezipfile.extract(zinfo, extractto)
-                        os.chmod(os.path.join(extractto, zinfo.filename), 0755) # make executable
+                        os.chmod(os.path.join(extractto, zinfo.filename), 0o755) # make executable
                     thezipfile.close()
 
                     # override some permissions with a special metainfo file.
                     if permdata and 'permissions' in permdata:
-                        for (pattern,perm) in permdata['permissions'].iteritems():
+                        for (pattern,perm) in permdata['permissions'].items():
                             logger.debug("pattern: %s to perms=%s" %(pattern, perm))
                             # int(s, 0) converts s to int, parsing prefixes '0' (octal), '0x' (hex)
                             # cf. http://stackoverflow.com/questions/604240/

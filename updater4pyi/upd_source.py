@@ -52,7 +52,7 @@ import logging
 import copy
 import json
 import inspect
-import urllib2
+import urllib.request, urllib.error, urllib.parse
 
 from . import util
 from .upd_defs import RELTYPE_UNKNOWN, RELTYPE_EXE, RELTYPE_ARCHIVE, RELTYPE_BUNDLE_ARCHIVE
@@ -121,7 +121,7 @@ class BinReleaseInfo(object):
         self.reltype = reltype
         self.platform = platform
 
-        for k,v in kwargs.iteritems():
+        for k,v in kwargs.items():
             setattr(self, k, v)
 
 
@@ -158,7 +158,7 @@ class BinReleaseInfo(object):
     def __repr__(self):
         return (self.__class__.__name__+'('+
                 ", ".join([ '%s=%r' % (k,v)
-                            for (k,v) in self.__dict__.iteritems() ]) +
+                            for (k,v) in self.__dict__.items() ]) +
                 ')')
 
 
@@ -253,7 +253,7 @@ def _make_bin_release_info(m, lst, innerkwargs):
     logger.debug("make_bin_release_info: lst=%r", lst)
 
     args = {}
-    for k,v in lst+innerkwargs.items():
+    for k,v in lst+list(innerkwargs.items()):
         val = None
         if (type(v).__name__ == 'function'):
             argspec = inspect.getargspec(v)
@@ -356,7 +356,7 @@ def relpattern(re_pattern, reltype=RELTYPE_UNKNOWN, platform=None, **kwargs):
              _fix_plat=platform, _fix_rtyp=reltype, _fix_kwargs=copy.deepcopy(kwargs), **innerkwargs:
              _make_bin_release_info(m,
                                     [ ('version',version) ] +
-                                    _fix_kwargs.items() +
+                                    list(_fix_kwargs.items()) +
                                     [ ('filename', filename),
                                       ('url', url),
                                       ('platform',_fix_plat),
@@ -713,7 +713,7 @@ class UpdateGithubReleasesSource(UpdateSource):
 
         try:
             fdata = upd_downloader.url_opener.open(url)
-        except urllib2.URLError as e:
+        except urllib.error.URLError as e:
             logger.warning("Can't connect to github for software update check: %s", e)
             return None
 
