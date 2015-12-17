@@ -31,8 +31,8 @@
 
 import datetime
 
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
+from PyQt5.QtCore import *
+from PyQt5.QtGui import *
 
 from . import upd_core
 from . import upd_iface
@@ -46,7 +46,7 @@ class UpdatePyQt4Interface(QObject, upd_iface.UpdateGenericGuiInterface):
     def __init__(self, updater, parent=None, **kwargs):
         self.timer = None
         
-        QObject.__init__(self, parent=parent)
+        QObject.__init__(self, updater=updater, parent=parent)
         # super doesn't propagate out of the Qt multiple inheritance...
         upd_iface.UpdateGenericGuiInterface.__init__(self, updater, **kwargs)
 
