@@ -111,7 +111,6 @@ class UpdatePyQt4Interface(QObject, upd_iface.UpdateGenericGuiInterface):
         # Anything else: no, go away
         return False
 
-
     def ask_to_update(self, rel_info):
         msgBox = QMessageBox(parent=None)
         msgBox.setWindowModality(Qt.NonModal)
