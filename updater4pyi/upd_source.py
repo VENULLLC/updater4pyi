@@ -53,6 +53,7 @@ import copy
 import json
 import inspect
 import urllib2
+from bs4 import BeautifulSoup
 
 from . import util
 from .upd_defs import RELTYPE_UNKNOWN, RELTYPE_EXE, RELTYPE_ARCHIVE, RELTYPE_BUNDLE_ARCHIVE
@@ -178,7 +179,7 @@ class UpdateSource(object):
 
     Subclasses should reimplement the main function `get_releases()`.
     """
-    
+
     def __init__(self, *args, **kwargs):
         """
         Constructs an `UpdateSource` object.
@@ -268,10 +269,10 @@ def _make_bin_release_info(m, lst, innerkwargs):
             val = v(**valargs)
         else:
             val = v
-            
+
         if (val is IgnoreArgument or isinstance(val, IgnoreArgument)):
             continue
-        
+
         args[k] = val
 
     logger.debug("make_bin_release_info: final args=%r", args)
@@ -313,7 +314,7 @@ def relpattern(re_pattern, reltype=RELTYPE_UNKNOWN, platform=None, **kwargs):
           value is used as the value of the attribute. If the callable returned
           `IgnoreArgument`, then the rule is ignored (no one would have guessed). The
           callable may accept any combination of the following keyword arguments:
-              
+
               * 'm' is the regex match object form the regex that matched the filename,
                 and may be used to extract groups for example;
 
@@ -329,7 +330,7 @@ def relpattern(re_pattern, reltype=RELTYPE_UNKNOWN, platform=None, **kwargs):
     to VERSION and PLATFORM are set if they were found in the filename, otherwise we
     assume they'll be figured out by some other means. The release type (`reltype`) is
     guessed depending on the extension of the filename and the platform. The example is::
-    
+
         pattern1 = relpattern(
             r'(-(?P<version>\d+[\w.]+))?(-(?P<platform>macosx|linux|win))?\.(?P<ext>[a-zA-Z]+)$',
             version=lambda m: m.group('version') if m.group('version') else IgnoreArgument,
@@ -348,7 +349,7 @@ def relpattern(re_pattern, reltype=RELTYPE_UNKNOWN, platform=None, **kwargs):
             if ext in ('zip', 'tgz'):
                 return RELTYPE_ARCHIVE
             return IgnoreArgument
-    
+
     """
     # fix the values with default parameters
     return (re_pattern,
@@ -419,7 +420,7 @@ class ReleaseInfoFromNameStrategy(object):
         """
 
         logger.debug("Trying to match filename %r to get info. kwargs=%r", filename, kwargs)
-        
+
         for (pat,cal) in self.patterns:
             m = re.search(pat, filename)
             if m is None:
@@ -553,7 +554,7 @@ class UpdateSourceDevelopmentReleasesFilter(object):
 class UpdateLocalDirectorySource(UpdateSource):
     """
     Updates will be searched for in a local directory. Useful for debugging.
-    
+
     Will check in the given `source_directory` directory for updates. Files should be organized
     in subdirectories which should be version names, e.g.::
 
@@ -570,7 +571,7 @@ class UpdateLocalDirectorySource(UpdateSource):
     This updater source is mostly for debugging purposes. There's no real-life utility I
     can see...
     """
-    
+
     def __init__(self, source_directory, naming_strategy=None, *args, **kwargs):
 
         if (naming_strategy is None):
@@ -582,7 +583,7 @@ class UpdateLocalDirectorySource(UpdateSource):
         self.source_directory = source_directory
 
         logger.debug("source directory is %s", self.source_directory)
-        
+
         super(UpdateLocalDirectorySource, self).__init__(*args, **kwargs)
 
 
@@ -607,7 +608,7 @@ class UpdateLocalDirectorySource(UpdateSource):
         for ver in versiondirs:
 
             logger.debug("got version: %s" %(ver))
-            
+
             if (newer_than_version_parsed is not None and
                 util.parse_version(ver) <= newer_than_version_parsed):
                 # no update found.
@@ -637,10 +638,135 @@ class UpdateLocalDirectorySource(UpdateSource):
                      "\n".join(["\t* %s, %s (%r)" %(r.get_filename(), r.get_version(), r.__dict__)
                                 for r in inf_list])
                      )
-        
+
         # return the list of releases
         return inf_list
-    
+
+
+
+# -----------------------------------------------------------------
+
+
+class UpdateHttpSource(UpdateSource):
+    """
+    Updates will be searched for in an HTTP directory. HTTP server must
+    have autoindexing turned on.  For Nginx, see
+    http://nginxlibrary.com/enable-directory-listing/.
+
+    Will check in the given `source_directory` directory for updates. Files should be organized
+    in subdirectories which should be version names, e.g.::
+
+      1.0/
+        binary-macosx[.zip]
+        binary-linux[.zip]
+        binary-win[.exe|.zip]
+      1.1/
+        binary-macosx[.zip]
+        binary-linux[.zip]
+        binary-win[.exe|.zip]
+      ...
+
+    """
+
+    def __init__(self, source_uri, naming_strategy=None, *args, **kwargs):
+
+        if (naming_strategy is None):
+            naming_strategy = _default_naming_strategy_patterns
+        if (not isinstance(naming_strategy, ReleaseInfoFromNameStrategy)):
+            naming_strategy = ReleaseInfoFromNameStrategy(naming_strategy)
+
+        self.naming_strategy = naming_strategy
+        self.source_uri = source_uri
+
+        logger.debug("source URI is %s", self.source_uri)
+
+        super(UpdateHttpSource, self).__init__(*args, **kwargs)
+
+
+    def _get_listing(self, uri, directories):
+        try:
+            if uri[-1] != '/':
+                uri += "/"
+            listing = urllib2.urlopen(uri).read()
+        except:
+            logger.warning("Error opening '%s' for listing" % (uri))
+            raise
+
+        try:
+            soup = BeautifulSoup(listing, 'html.parser')
+            link_targets = []
+            for link in soup.find_all('a'):
+                href = link.get('href')
+                if directories:
+                    if (href[-1] == '/') and (href != "../"):
+                        link_targets.append(href.rstrip('/'))
+                else:
+                    if href[-1] != '/':
+                        link_targets.append(href)
+        except:
+            logger.warning("Error collecting links from %s" % (uri))
+            raise
+        return link_targets
+
+
+    def _get_directories(self, uri):
+        return self._get_listing(uri, True)
+
+
+    def _get_files(self, uri):
+        return self._get_listing(uri, False)
+
+
+    def get_releases(self, newer_than_version=None, **kwargs):
+
+        try:
+            versiondirs = self._get_directories(self.source_uri)
+        except:
+            logger.warning("Can't list URI %s" % (self.source_uri))
+            raise Updater4PyiError("Can't list URI %s" % (self.source_uri))
+        versiondirs = sorted(versiondirs, key=util.parse_version, reverse=True)
+
+        logger.debug("get_releases(): Got version list: %r", versiondirs)
+
+        newer_than_version_parsed = util.parse_version(newer_than_version)
+        inf_list = []
+
+        for ver in versiondirs:
+
+            logger.debug("got version: %s" %(ver))
+
+            if (newer_than_version_parsed is not None and
+                util.parse_version(ver) <= newer_than_version_parsed):
+                # no update found.
+                break
+
+            base = self.source_uri.rstrip('/') + '/' + ver
+
+            logger.debug("version %s is newer; base dir: %s" %(ver, base))
+
+            try:
+                # list files in that directory.
+                for fn in self._get_files(base):
+                    url = base.rstrip('/') + '/' + fn
+                    inf = self.naming_strategy.get_release_info(filename=fn,
+                                                                url=url,
+                                                                version=ver,
+                                                                )
+                    if inf is not None and self.test_release_filters(inf):
+                        inf_list.append(inf)
+            except OSError:
+                logger.warning("Can't list directory %s", base)
+
+
+        # debug: list found versions
+        logger.debug("Found releases:\n"+
+                     "\n".join(["\t* %s, %s (%r)" %(r.get_filename(), r.get_version(), r.__dict__)
+                                for r in inf_list])
+                     )
+
+        # return the list of releases
+        return inf_list
+
 
 
 
@@ -659,11 +785,11 @@ class UpdateGithubReleasesSource(UpdateSource):
     """
     Updates will be searched for in as releases of a github repo.
     """
-    
+
     def __init__(self, github_user_repo, naming_strategy=None, *args, **kwargs):
         """
         Arguments:
-            
+
             - `github_user_repo`: a string literal `'user/repo_name'`,
               e.g. `'phfaist/bibolamazi'`.
 
@@ -736,14 +862,14 @@ class UpdateGithubReleasesSource(UpdateSource):
             newer_than_version_parsed = util.parse_version(newer_than_version)
 
         inf_list = []
-        
+
         for relinfo in data:
             html_url = relinfo.get('html_url', None)
             tag_name = relinfo.get('tag_name', None)
             rel_name = relinfo.get('name', '<unknown>')
             rel_desc = relinfo.get('body', None)
             rel_date = relinfo.get('published_at', None)
-            
+
             # release version from tag name
             # strip starting 'v' if present
             relver = '0.0-unknown'
@@ -754,7 +880,7 @@ class UpdateGithubReleasesSource(UpdateSource):
                 util.parse_version(relver) <= newer_than_version_parsed):
                 logger.debug("Version %s is not strictly newer than %s, skipping...", relver, newer_than_version)
                 continue
-                
+
             relfiles = relinfo.get('assets', {})
             for relfile in relfiles:
 
@@ -783,13 +909,6 @@ class UpdateGithubReleasesSource(UpdateSource):
                      "\n".join(["\t* %s, %s (%r)" %(r.get_filename(), r.get_version(), r.__dict__)
                                 for r in inf_list])
                      )
-        
+
         # return the list of releases
         return inf_list
-    
-
-
-
-
-
-
