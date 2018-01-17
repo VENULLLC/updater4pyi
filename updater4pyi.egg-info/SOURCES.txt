@@ -2,6 +2,7 @@ LICENSE.txt
 MANIFEST.in
 README.md
 hook-updater4pyi.py
+setup.cfg
 setup.py
 updater4pyi/__init__.py
 updater4pyi/cacert.pem

@@ -2,7 +2,7 @@
 
 import os
 import os.path
-#from distutils.core import setup
+#from setuptools import setup
 from setuptools import setup
 
 import updater4pyi.upd_version

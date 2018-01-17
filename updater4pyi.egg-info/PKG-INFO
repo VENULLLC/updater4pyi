@@ -1,4 +1,4 @@
-Metadata-Version: 1.1
+Metadata-Version: 1.0
 Name: updater4pyi
 Version: 0.7
 Summary: Lightweight library for software auto-update for applications frozen with pyinstaller
