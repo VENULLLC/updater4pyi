@@ -21,6 +21,6 @@ elif updater4pyi.util.is_win():
         (locpath('installers/win/do_install.exe.zip'), 'updater4pyi/installers/win'),
         ]
 
-from PyInstaller.utils.hooks import collect_data_files
-datas = collect_data_files('updater4pyi')
-print "DATAS IS\n\t%r"%(datas)
+#from hookutils import collect_data_files
+#datas = collect_data_files('updater4pyi')
+print(("DATAS IS\n\t%r"%(datas)))

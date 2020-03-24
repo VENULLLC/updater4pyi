@@ -1,32 +1,38 @@
 
-UPDATER4PYI
+Quick Start
 ===========
 
-Updater4pyi is a simple, lightweight, flexible python library to enable your
-applications packaged with pyinstaller to auto-update themselves.
+Simple example: say you want to add an auto-update feature to your python/PyQt4 program,
+hosted on github. Add the following lines into your python program::
+    
+    from updater4pyi import upd_source, upd_core
+    from updater4pyi.upd_iface_pyqt4 import UpdatePyQt4Interface
+    
+    swu_source = upd_source.UpdateGithubReleasesSource('githubusername/githubproject')
+    swu_updater = upd_core.Updater(current_version=...,
+                                   update_source=swu_source)
+    swu_interface = UpdatePyQt4Interface(swu_updater,
+                                         progname='Your Project Name',
+                                         ask_before_checking=True,
+                                         parent=QApplication.instance())
 
-Its design is extremely flexible, so it can work with various "sources", e.g. a
-github repository, but you can write your own source just as easily.
 
-The update process runs for both one-file and one-dir packaged applications, on
-Windows, Linux and Mac OS X.
+You should also add the hook `hook-updater4pyi.py` into your PyInstaller hooks path
+(presumably into your custom hooks). Then your PyInstaller-packaged program will ask the
+user if they agree to auto-update, then regularly check for updates and ask to install
+them. You may need to fiddle a bit with the naming patterns of your releases (specify a
+second argument to the `UpdateGithubReleasesSource` constructor).
 
-The base library is interface-independent. An interface in PyQt4 as well as one
-for console applications are provided, but writing an interface for another GUI
-system (wxWidgets ...) should be a matter of several lines of code.
-
-
-
-Full Documentation
-==================
-
-Read the full documentation (being constructed) at
-<http://updater4pyi.readthedocs.org/>.
+The library is designed to be highly flexible. It should be easy to write update sources
+for any other type of sources, such as XML application feeds etc. Likewise, the library
+does *not* rely on PyQt4 (it just provides a convenient interface for those PyQt4
+apps). It should be simple to write an interface in whater Gui toolkit you prefer--see
+:py:class:`upd_iface.UpdateGenericGuiInterface`.
 
 
 
 Installation & Usage
-====================
+--------------------
 
 Updater4pyi is available on PyPI, so the recommended installation is through
 there.
@@ -45,7 +51,7 @@ To use updater4pyi in your programs, you need to:
   - create an interface, which will interact with the user.
 
 For example, the [bibolamazi project](https://github.com/phfaist/bibolamazi)
-uses the updater4pyi framework, and the relevant lines in there are:
+uses the updater4pyi framework, and the relevant lines in there are::
 
     from updater4pyi import upd_source, upd_core
     from updater4pyi.upd_iface_pyqt4 import UpdatePyQt4Interface
@@ -63,7 +69,7 @@ to be in your python path.
 
 
 Sources
-=======
+-------
 
 At the moment, there are only two source types
 
@@ -81,7 +87,7 @@ so that other people can profit!
 
 
 Security
-========
+--------
 
 This library supports downloads through HTTPS with certificate verification,
 making the download and update process secure. The default root certificate is
@@ -91,7 +97,7 @@ needed.
 
 
 Interfaces
-==========
+----------
 
 At the moment, there are the following interfaces for updates:
 
@@ -107,10 +113,3 @@ At the moment, there are the following interfaces for updates:
   - A PyQt4 interface is provided based on the generic GUI interface mentioned
     in the previous point.
 
-
-Contributing
-============
-
-I won't have a ton of time to maintain this project, so if you feel like contributing
-(in particular writing new sources or interfaces, for example), don't hesitate to send
-me a pull request or to contact me.
